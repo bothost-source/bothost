@@ -9,20 +9,18 @@ const path = require('path');
 const fs = require('fs-extra');
 const { spawn } = require('child_process');
 const { v4: uuidv4 } = require('uuid');
+const AdmZip = require('adm-zip');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
-// Middleware
-app.use(cors());
+app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Content-Type', 'Authorization'] }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Create directories
 fs.ensureDirSync(path.join(__dirname, 'uploads'));
 fs.ensureDirSync(path.join(__dirname, 'logs'));
 
-// ========== DATABASE (from database.js) ==========
 const dbPath = path.join(__dirname, 'database.sqlite');
 const db = new sqlite3.Database(dbPath);
 
@@ -33,6 +31,8 @@ db.serialize(() => {
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
     plan TEXT DEFAULT 'starter',
+    telegram_bot_token TEXT,
+    whatsapp_connected BOOLEAN DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
@@ -42,10 +42,14 @@ db.serialize(() => {
     name TEXT NOT NULL,
     runtime TEXT NOT NULL,
     filename TEXT NOT NULL,
+    is_zip BOOLEAN DEFAULT 0,
+    extracted_path TEXT,
     description TEXT,
     status TEXT DEFAULT 'stopped',
     port INTEGER,
     pid INTEGER,
+    qr_code TEXT,
+    pairing_method TEXT DEFAULT 'telegram',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
@@ -58,9 +62,6 @@ db.serialize(() => {
   )`);
 });
 
-// ========== MIDDLEWARE (from auth.js & upload.js) ==========
-
-// JWT Auth
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -73,7 +74,6 @@ function authenticateToken(req, res, next) {
   });
 }
 
-// File Upload
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const userDir = path.join(__dirname, 'uploads', req.user.userId.toString());
@@ -84,14 +84,16 @@ const storage = multer.diskStorage({
     cb(null, `${uuidv4()}-${file.originalname}`);
   }
 });
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
-// Running bots tracker
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+});
+
 const runningBots = new Map();
 
-// ========== AUTH ROUTES (from auth.js) ==========
+// ========== AUTH ROUTES ==========
 
-// Register
 app.post('/api/auth/register', async (req, res) => {
   const { name, email, password } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -109,7 +111,6 @@ app.post('/api/auth/register', async (req, res) => {
   );
 });
 
-// Login
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
   
@@ -123,7 +124,6 @@ app.post('/api/auth/login', (req, res) => {
   });
 });
 
-// Get current user
 app.get('/api/auth/me', authenticateToken, (req, res) => {
   db.get('SELECT id, name, email, plan FROM users WHERE id = ?', [req.user.userId], (err, user) => {
     if (err || !user) return res.status(404).json({ error: 'User not found' });
@@ -131,9 +131,8 @@ app.get('/api/auth/me', authenticateToken, (req, res) => {
   });
 });
 
-// ========== BOT ROUTES (from bots.js) ==========
+// ========== BOT ROUTES ==========
 
-// Get all bots
 app.get('/api/bots', authenticateToken, (req, res) => {
   db.all('SELECT * FROM bots WHERE user_id = ? ORDER BY created_at DESC', [req.user.userId], (err, bots) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -141,22 +140,44 @@ app.get('/api/bots', authenticateToken, (req, res) => {
   });
 });
 
-// Create bot with file upload
-app.post('/api/bots', authenticateToken, upload.single('botFile'), (req, res) => {
+app.post('/api/bots', authenticateToken, upload.single('botFile'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
   
   const { name, runtime, description } = req.body;
+  const isZip = req.file.originalname.endsWith('.zip');
+  let extractedPath = null;
   
-  db.run('INSERT INTO bots (user_id, name, runtime, filename, description, status) VALUES (?, ?, ?, ?, ?, ?)',
-    [req.user.userId, name, runtime, req.file.filename, description, 'stopped'],
+  // If ZIP, extract it
+  if (isZip) {
+    try {
+      const zip = new AdmZip(req.file.path);
+      const extractDir = path.join(__dirname, 'uploads', req.user.userId.toString(), 'extracted', path.basename(req.file.filename, '.zip'));
+      fs.ensureDirSync(extractDir);
+      zip.extractAllTo(extractDir, true);
+      extractedPath = extractDir;
+    } catch (err) {
+      return res.status(400).json({ error: 'Failed to extract ZIP: ' + err.message });
+    }
+  }
+  
+  db.run('INSERT INTO bots (user_id, name, runtime, filename, is_zip, extracted_path, description, status, pairing_method) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [req.user.userId, name, runtime, req.file.filename, isZip ? 1 : 0, extractedPath, description, 'stopped', 'telegram'],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ id: this.lastID, name, runtime, filename: req.file.filename, description, status: 'stopped' });
+      res.json({ 
+        id: this.lastID, 
+        name, 
+        runtime, 
+        filename: req.file.filename, 
+        is_zip: isZip ? 1 : 0,
+        description, 
+        status: 'stopped',
+        pairing_method: 'telegram'
+      });
     }
   );
 });
 
-// Get bot logs
 app.get('/api/bots/:id/logs', authenticateToken, (req, res) => {
   db.all('SELECT * FROM logs WHERE bot_id = ? ORDER BY created_at DESC LIMIT 100', [req.params.id], (err, logs) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -164,9 +185,22 @@ app.get('/api/bots/:id/logs', authenticateToken, (req, res) => {
   });
 });
 
-// ========== EXECUTION ROUTES (from execute.js) ==========
+// ========== TELEGRAM PAIRING ==========
 
-// Start bot
+app.post('/api/bots/:id/pair-telegram', authenticateToken, (req, res) => {
+  const { telegramToken } = req.body;
+  
+  db.run('UPDATE bots SET telegram_bot_token = ? WHERE id = ? AND user_id = ?', 
+    [telegramToken, req.params.id, req.user.userId],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: 'Telegram bot connected. Use /pair command in Telegram to connect WhatsApp.' });
+    }
+  );
+});
+
+// ========== EXECUTION ROUTES ==========
+
 app.post('/api/execute/:id/start', authenticateToken, (req, res) => {
   const botId = req.params.id;
   
@@ -175,17 +209,36 @@ app.post('/api/execute/:id/start', authenticateToken, (req, res) => {
   db.get('SELECT * FROM bots WHERE id = ? AND user_id = ?', [botId, req.user.userId], (err, bot) => {
     if (err || !bot) return res.status(404).json({ error: 'Bot not found' });
     
-    const botDir = path.join(__dirname, 'uploads', req.user.userId.toString());
-    const botFile = path.join(botDir, bot.filename);
-    const port = 3000 + Math.floor(Math.random() * 1000);
+    const userDir = path.join(__dirname, 'uploads', req.user.userId.toString());
+    let botFile;
+    let workingDir;
     
+    if (bot.is_zip && bot.extracted_path) {
+      // Find main file in extracted folder
+      workingDir = bot.extracted_path;
+      const files = fs.readdirSync(workingDir);
+      botFile = files.find(f => f.endsWith('.js') || f.endsWith('.py'));
+      if (!botFile) return res.status(400).json({ error: 'No .js or .py file found in ZIP' });
+      botFile = path.join(workingDir, botFile);
+    } else {
+      workingDir = userDir;
+      botFile = path.join(userDir, bot.filename);
+    }
+    
+    const port = 3000 + Math.floor(Math.random() * 1000);
     let childProcess;
-    const env = { ...process.env, PORT: port, BOT_ID: botId };
+    const env = { 
+      ...process.env, 
+      PORT: port, 
+      BOT_ID: botId,
+      PAIRING_METHOD: 'telegram',
+      TELEGRAM_BOT_TOKEN: bot.telegram_bot_token || ''
+    };
     
     if (bot.runtime.includes('node')) {
-      childProcess = spawn('node', [botFile], { cwd: botDir, env });
+      childProcess = spawn('node', [botFile], { cwd: workingDir, env });
     } else if (bot.runtime.includes('python')) {
-      childProcess = spawn('python3', [botFile], { cwd: botDir, env });
+      childProcess = spawn('python3', [botFile], { cwd: workingDir, env });
     } else {
       return res.status(400).json({ error: 'Unknown runtime' });
     }
@@ -195,7 +248,13 @@ app.post('/api/execute/:id/start', authenticateToken, (req, res) => {
     db.run('UPDATE bots SET status = ?, port = ?, pid = ? WHERE id = ?', ['running', port, childProcess.pid, botId]);
     
     childProcess.stdout.on('data', (data) => {
-      db.run('INSERT INTO logs (bot_id, message, type) VALUES (?, ?, ?)', [botId, data.toString().trim(), 'info']);
+      const msg = data.toString().trim();
+      db.run('INSERT INTO logs (bot_id, message, type) VALUES (?, ?, ?)', [botId, msg, 'info']);
+      
+      // Check for QR code in output
+      if (msg.includes('QR') || msg.includes('qr')) {
+        db.run('UPDATE bots SET qr_code = ? WHERE id = ?', [msg, botId]);
+      }
     });
     
     childProcess.stderr.on('data', (data) => {
@@ -208,11 +267,15 @@ app.post('/api/execute/:id/start', authenticateToken, (req, res) => {
       db.run('INSERT INTO logs (bot_id, message, type) VALUES (?, ?, ?)', [botId, `Stopped with code ${code}`, 'info']);
     });
     
-    res.json({ message: 'Bot started', port, pid: childProcess.pid });
+    res.json({ 
+      message: 'Bot started', 
+      port, 
+      pid: childProcess.pid,
+      pairing: 'Check Telegram bot for QR code to pair WhatsApp'
+    });
   });
 });
 
-// Stop bot
 app.post('/api/execute/:id/stop', authenticateToken, (req, res) => {
   const botProcess = runningBots.get(req.params.id);
   if (!botProcess) return res.status(400).json({ error: 'Not running' });
@@ -227,7 +290,6 @@ app.post('/api/execute/:id/stop', authenticateToken, (req, res) => {
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Start server
 app.listen(PORT, () => {
-  console.log(`🚀 BotHost running on http://localhost:${PORT}`);
+  console.log(`🚀 BotHost running on port ${PORT}`);
 });
