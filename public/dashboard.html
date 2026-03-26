@@ -12,157 +12,95 @@
         .glass-dark { background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
         .sidebar-link { transition: all 0.2s; }
         .sidebar-link:hover, .sidebar-link.active { background: rgba(34, 197, 94, 0.1); color: #4ade80; border-right: 3px solid #22c55e; }
-        
         .drop-zone { border: 2px dashed rgba(255, 255, 255, 0.2); transition: all 0.3s; }
         .drop-zone.dragover { border-color: #22c55e; background: rgba(34, 197, 94, 0.1); }
-        
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px); }
         .modal.active { display: flex; align-items: center; justify-content: center; }
         .modal-content { background: #1a1a1a; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 2rem; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; animation: slideIn 0.3s ease; }
         @keyframes slideIn { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
-        
         .log-entry { font-family: 'Monaco', 'Menlo', monospace; font-size: 0.75rem; }
-        
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); position: fixed; z-index: 50; height: 100vh; width: 280px; }
-            .sidebar.open { transform: translateX(0); }
-        }
+        @media (max-width: 768px) { .sidebar { transform: translateX(-100%); position: fixed; z-index: 50; height: 100vh; width: 280px; } .sidebar.open { transform: translateX(0); } }
     </style>
 </head>
 <body class="bg-[#0a0a0a] text-gray-100 font-sans antialiased">
-
-    <!-- Mobile Header -->
     <div class="md:hidden flex items-center justify-between p-4 bg-[#121212] border-b border-white/5 sticky top-0 z-40">
         <div class="flex items-center space-x-2">
-            <div class="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center">
-                <i data-lucide="bot" class="w-5 h-5 text-white"></i>
-            </div>
+            <div class="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center"><i data-lucide="bot" class="w-5 h-5 text-white"></i></div>
             <span class="font-display font-bold text-lg">BotHost</span>
         </div>
-        <button onclick="toggleSidebar()" class="p-2 hover:bg-white/5 rounded-lg">
-            <i data-lucide="menu" class="w-6 h-6"></i>
-        </button>
+        <button onclick="toggleSidebar()" class="p-2 hover:bg-white/5 rounded-lg"><i data-lucide="menu" class="w-6 h-6"></i></button>
     </div>
-
     <div class="flex min-h-screen">
-        <!-- Sidebar -->
         <aside id="sidebar" class="sidebar w-64 bg-[#121212] border-r border-white/5 flex-shrink-0 transition-transform duration-300 md:translate-x-0 fixed md:relative h-full z-50">
             <div class="p-6 h-full flex flex-col">
                 <a href="/" class="hidden md:flex items-center space-x-2 mb-8">
-                    <div class="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center">
-                        <i data-lucide="bot" class="w-5 h-5 text-white"></i>
-                    </div>
+                    <div class="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center"><i data-lucide="bot" class="w-5 h-5 text-white"></i></div>
                     <span class="font-display font-bold text-xl">BotHost</span>
                 </a>
-
                 <nav class="space-y-2 flex-1">
-                    <a href="#" onclick="showSection('bots')" id="nav-bots" class="sidebar-link active flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
-                        <i data-lucide="bot" class="w-5 h-5"></i>
-                        <span>My Bots</span>
-                    </a>
-                    <a href="#" onclick="showSection('upload')" id="nav-upload" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
-                        <i data-lucide="upload-cloud" class="w-5 h-5"></i>
-                        <span>Upload Bot</span>
-                    </a>
-                    <a href="#" onclick="showSection('logs')" id="nav-logs" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
-                        <i data-lucide="file-text" class="w-5 h-5"></i>
-                        <span>Logs</span>
-                    </a>
-                    <a href="#" onclick="showSection('settings')" id="nav-settings" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
-                        <i data-lucide="settings" class="w-5 h-5"></i>
-                        <span>Settings</span>
-                    </a>
+                    <a href="#" onclick="showSection('bots')" id="nav-bots" class="sidebar-link active flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300"><i data-lucide="bot" class="w-5 h-5"></i><span>My Bots</span></a>
+                    <a href="#" onclick="showSection('upload')" id="nav-upload" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300"><i data-lucide="upload-cloud" class="w-5 h-5"></i><span>Upload Bot</span></a>
+                    <a href="#" onclick="showSection('logs')" id="nav-logs" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300"><i data-lucide="file-text" class="w-5 h-5"></i><span>Logs</span></a>
+                    <a href="#" onclick="showSection('settings')" id="nav-settings" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300"><i data-lucide="settings" class="w-5 h-5"></i><span>Settings</span></a>
                 </nav>
-
                 <div class="mt-auto pt-6 border-t border-white/5">
                     <div class="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-4">
-                        <div class="flex items-center space-x-2 mb-2">
-                            <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <span class="text-green-400 text-xs font-mono">SYSTEM ONLINE</span>
-                        </div>
+                        <div class="flex items-center space-x-2 mb-2"><div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div><span class="text-green-400 text-xs font-mono">SYSTEM ONLINE</span></div>
                         <p class="text-xs text-gray-400">Plan: <span id="user-plan" class="text-white">Starter</span></p>
                     </div>
-                    
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-black font-bold" id="user-avatar">
-                            JD
-                        </div>
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-black font-bold" id="user-avatar">JD</div>
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-medium text-white truncate" id="user-name">John Doe</p>
                             <p class="text-xs text-gray-500 truncate" id="user-email">john@example.com</p>
                         </div>
-                        <button onclick="logout()" class="p-2 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white">
-                            <i data-lucide="log-out" class="w-5 h-5"></i>
-                        </button>
+                        <button onclick="logout()" class="p-2 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white"><i data-lucide="log-out" class="w-5 h-5"></i></button>
                     </div>
                 </div>
             </div>
         </aside>
-
-        <!-- Overlay -->
         <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
-
-        <!-- Main Content -->
         <main class="flex-1 md:ml-0 w-full">
-            <!-- Top Bar -->
             <header class="hidden md:flex items-center justify-between px-8 py-4 bg-[#121212]/50 border-b border-white/5 sticky top-0 z-30 backdrop-blur-md">
                 <div>
                     <h1 class="text-xl font-semibold" id="page-title">My Bots</h1>
                     <p class="text-sm text-gray-500">Manage your WhatsApp bots</p>
                 </div>
-                <button onclick="showSection('upload')" class="bg-green-500 hover:bg-green-600 text-black font-semibold px-4 py-2 rounded-lg transition-all flex items-center space-x-2">
-                    <i data-lucide="plus" class="w-4 h-4"></i>
-                    <span>Upload Bot</span>
-                </button>
+                <button onclick="showSection('upload')" class="bg-green-500 hover:bg-green-600 text-black font-semibold px-4 py-2 rounded-lg transition-all flex items-center space-x-2"><i data-lucide="plus" class="w-4 h-4"></i><span>Upload Bot</span></button>
             </header>
-
             <div class="p-4 md:p-8 max-w-7xl mx-auto">
-                
-                <!-- Bots List Section -->
                 <div id="section-bots" class="space-y-6">
                     <div class="flex items-center justify-between md:hidden">
                         <h2 class="text-xl font-bold">My Bots</h2>
-                        <button onclick="showSection('upload')" class="bg-green-500 text-black p-2 rounded-lg">
-                            <i data-lucide="plus" class="w-5 h-5"></i>
-                        </button>
+                        <button onclick="showSection('upload')" class="bg-green-500 text-black p-2 rounded-lg"><i data-lucide="plus" class="w-5 h-5"></i></button>
                     </div>
-
-                    <div id="bots-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <!-- Bots loaded dynamically -->
-                    </div>
+                    <div id="bots-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
                 </div>
-
-                <!-- Upload Section -->
                 <div id="section-upload" class="hidden space-y-6">
                     <h2 class="text-2xl font-bold">Upload New Bot</h2>
-                    
                     <div class="glass-dark rounded-2xl p-8 border border-white/5 max-w-2xl">
                         <form id="upload-form" onsubmit="handleUpload(event)" class="space-y-6">
                             <div>
                                 <label class="block text-sm font-medium mb-2 text-gray-300">Bot Name</label>
                                 <input type="text" id="bot-name" required class="w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-4 py-3 text-white focus:border-green-500 focus:outline-none" placeholder="My WhatsApp Bot">
                             </div>
-
                             <div>
                                 <label class="block text-sm font-medium mb-2 text-gray-300">Runtime</label>
                                 <select id="bot-runtime" class="w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-4 py-3 text-white focus:border-green-500 focus:outline-none">
-                                    <option value="nodejs20">Node.js 20 (Recommended)</option>
+                                    <option value="nodejs20">Node.js 20</option>
                                     <option value="nodejs18">Node.js 18</option>
                                     <option value="python312">Python 3.12</option>
                                     <option value="python311">Python 3.11</option>
                                 </select>
                             </div>
-
-                            <!-- File Drop Zone - UPDATED -->
                             <div>
-                                <label class="block text-sm font-medium mb-2 text-gray-300">Bot File (ZIP or Single File)</label>
+                                <label class="block text-sm font-medium mb-2 text-gray-300">Bot File (ZIP or Any File)</label>
                                 <div id="drop-zone" class="drop-zone rounded-xl p-8 text-center cursor-pointer" onclick="document.getElementById('bot-file').click()">
-                                    <input type="file" id="bot-file" accept=".zip,.js,.py,.json,.env,.txt,.*" class="hidden" onchange="handleFileSelect(event)">
+                                    <input type="file" id="bot-file" class="hidden" onchange="handleFileSelect(event)">
                                     <i data-lucide="upload-cloud" class="w-12 h-12 text-gray-500 mx-auto mb-4"></i>
-                                    <p class="text-gray-400 mb-2">Drag & drop your bot file or ZIP</p>
-                                    <p class="text-sm text-gray-600">or click to browse</p>
-                                    <p class="text-xs text-gray-600 mt-2">Supports: .zip, .js, .py, .json, .env, .txt, and all files</p>
-                                    <p class="text-xs text-green-500 mt-1">💡 ZIP: Upload your entire bot folder as ZIP</p>
+                                    <p class="text-gray-400 mb-2">Drag & drop or click to browse</p>
+                                    <p class="text-xs text-gray-600">ALL files accepted: .zip, .js, .py, .json, .env, .txt, etc.</p>
+                                    <p class="text-xs text-green-500 mt-1">💡 ZIP files auto-extract!</p>
                                 </div>
                                 <div id="file-info" class="hidden mt-4 p-4 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center justify-between">
                                     <div class="flex items-center space-x-3">
@@ -172,32 +110,13 @@
                                             <span id="filetype" class="text-xs text-green-400"></span>
                                         </div>
                                     </div>
-                                    <button type="button" onclick="clearFile()" class="text-red-400 hover:text-red-300">
-                                        <i data-lucide="x" class="w-4 h-4"></i>
-                                    </button>
+                                    <button type="button" onclick="clearFile()" class="text-red-400 hover:text-red-300"><i data-lucide="x" class="w-4 h-4"></i></button>
                                 </div>
                             </div>
-
-                            <!-- Telegram Pairing Section - NEW -->
-                            <div class="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                                <h4 class="font-semibold text-blue-400 mb-2 flex items-center">
-                                    <i data-lucide="message-circle" class="w-4 h-4 mr-2"></i>
-                                    Telegram Pairing (Recommended)
-                                </h4>
-                                <p class="text-sm text-gray-400 mb-3">
-                                    Your bot will start in Telegram first. Send /pair to get QR code for WhatsApp connection.
-                                </p>
-                                <div>
-                                    <label class="block text-sm font-medium mb-2 text-gray-300">Telegram Bot Token (from @BotFather)</label>
-                                    <input type="text" id="telegram-token" class="w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:border-blue-500 focus:outline-none" placeholder="123456789:ABCdefGHIjklMNOpqrSTUvwxyz">
-                                </div>
-                            </div>
-
                             <div>
                                 <label class="block text-sm font-medium mb-2 text-gray-300">Description (Optional)</label>
                                 <textarea id="bot-description" rows="3" class="w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-4 py-3 text-white focus:border-green-500 focus:outline-none" placeholder="What does this bot do?"></textarea>
                             </div>
-
                             <button type="submit" id="upload-btn" class="w-full bg-green-500 hover:bg-green-600 text-black font-bold py-3 rounded-lg transition-all flex items-center justify-center space-x-2">
                                 <span>Upload & Deploy</span>
                                 <i data-lucide="rocket" class="w-5 h-5"></i>
@@ -205,23 +124,15 @@
                         </form>
                     </div>
                 </div>
-
-                <!-- Logs Section -->
                 <div id="section-logs" class="hidden space-y-6">
                     <div class="flex items-center justify-between">
                         <h2 class="text-2xl font-bold">System Logs</h2>
-                        <button onclick="refreshLogs()" class="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors text-sm">
-                            Refresh
-                        </button>
+                        <button onclick="refreshLogs()" class="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors text-sm">Refresh</button>
                     </div>
                     <div class="glass-dark rounded-xl border border-white/5 overflow-hidden bg-black">
-                        <div id="logs-container" class="p-4 h-96 overflow-y-auto font-mono text-sm">
-                            <div class="text-gray-500">Select a bot to view logs...</div>
-                        </div>
+                        <div id="logs-container" class="p-4 h-96 overflow-y-auto font-mono text-sm"><div class="text-gray-500">Select a bot to view logs...</div></div>
                     </div>
                 </div>
-
-                <!-- Settings Section -->
                 <div id="section-settings" class="hidden space-y-6">
                     <h2 class="text-2xl font-bold">Settings</h2>
                     <div class="glass-dark rounded-xl p-6 border border-white/5 max-w-2xl">
@@ -231,18 +142,13 @@
                                 <label class="block text-sm font-medium mb-2 text-gray-300">Display Name</label>
                                 <input type="text" id="settings-name" class="w-full bg-[#0a0a0a] border border-white/10 rounded-lg px-4 py-2 text-white focus:border-green-500 focus:outline-none">
                             </div>
-                            <button onclick="saveSettings()" class="bg-green-500 hover:bg-green-600 text-black font-semibold px-6 py-2 rounded-lg transition-all">
-                                Save Changes
-                            </button>
+                            <button onclick="saveSettings()" class="bg-green-500 hover:bg-green-600 text-black font-semibold px-6 py-2 rounded-lg transition-all">Save Changes</button>
                         </div>
                     </div>
                 </div>
-
             </div>
         </main>
     </div>
-
-    <!-- Bot Logs Modal -->
     <div id="modal-logs" class="modal">
         <div class="modal-content w-full max-w-4xl">
             <div class="flex items-center justify-between mb-6">
@@ -250,59 +156,31 @@
                     <h3 class="text-2xl font-bold" id="log-bot-name">Bot Logs</h3>
                     <p class="text-sm text-gray-500" id="log-bot-status">Status: Running</p>
                 </div>
-                <button onclick="closeModal('logs')" class="text-gray-400 hover:text-white">
-                    <i data-lucide="x" class="w-6 h-6"></i>
-                </button>
+                <button onclick="closeModal('logs')" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
-            <div class="bg-black rounded-lg p-4 h-96 overflow-y-auto font-mono text-sm border border-white/10" id="modal-logs-content">
-                <div class="text-gray-500">Loading logs...</div>
-            </div>
+            <div class="bg-black rounded-lg p-4 h-96 overflow-y-auto font-mono text-sm border border-white/10" id="modal-logs-content"><div class="text-gray-500">Loading logs...</div></div>
             <div class="mt-4 flex space-x-3">
-                <button onclick="controlBot('restart')" class="flex-1 py-2 bg-yellow-500/20 text-yellow-400 rounded-lg hover:bg-yellow-500/30 transition-colors">
-                    Restart
-                </button>
-                <button onclick="controlBot('stop')" id="btn-stop" class="flex-1 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors">
-                    Stop
-                </button>
-                <button onclick="controlBot('start')" id="btn-start" class="hidden flex-1 py-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors">
-                    Start
-                </button>
+                <button onclick="controlBot('restart')" class="flex-1 py-2 bg-yellow-500/20 text-yellow-400 rounded-lg hover:bg-yellow-500/30 transition-colors">Restart</button>
+                <button onclick="controlBot('stop')" id="btn-stop" class="flex-1 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors">Stop</button>
+                <button onclick="controlBot('start')" id="btn-start" class="hidden flex-1 py-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors">Start</button>
             </div>
         </div>
     </div>
-
-    <!-- Toast -->
     <div id="toast" class="fixed bottom-4 right-4 bg-green-500 text-black px-6 py-3 rounded-lg shadow-lg transform translate-y-20 transition-transform duration-300 z-50 font-semibold flex items-center space-x-2">
         <i data-lucide="check-circle" class="w-5 h-5"></i>
         <span id="toast-message">Success</span>
     </div>
-
     <script>
-        // Initialize
         lucide.createIcons();
-        
         const API_URL = '';
-        let currentUser = null;
-        let userBots = [];
-        let selectedFile = null;
-        let currentBotId = null;
-        let logInterval = null;
-
-        // Check auth
+        let currentUser = null, userBots = [], selectedFile = null, currentBotId = null, logInterval = null;
+        
         async function checkAuth() {
             const token = localStorage.getItem('token');
-            if (!token) {
-                window.location.href = '/auth.html?mode=login';
-                return;
-            }
-
+            if (!token) { window.location.href = '/auth.html?mode=login'; return; }
             try {
-                const res = await fetch('/api/auth/me', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
+                const res = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
                 if (!res.ok) throw new Error('Invalid token');
-                
                 currentUser = await res.json();
                 loadUserData();
                 loadBots();
@@ -311,7 +189,7 @@
                 window.location.href = '/auth.html?mode=login';
             }
         }
-
+        
         function loadUserData() {
             document.getElementById('user-name').textContent = currentUser.name;
             document.getElementById('user-email').textContent = currentUser.email;
@@ -319,39 +197,22 @@
             document.getElementById('user-plan').textContent = currentUser.plan.charAt(0).toUpperCase() + currentUser.plan.slice(1);
             document.getElementById('settings-name').value = currentUser.name;
         }
-
+        
         async function loadBots() {
             try {
-                const res = await fetch('/api/bots', {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                });
+                const res = await fetch('/api/bots', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
                 userBots = await res.json();
                 renderBots();
-            } catch (err) {
-                showToast('Failed to load bots', 'error');
-            }
+            } catch (err) { showToast('Failed to load bots', 'error'); }
         }
-
+        
         function renderBots() {
             const container = document.getElementById('bots-container');
-            
             if (userBots.length === 0) {
-                container.innerHTML = `
-                    <div class="col-span-full glass-dark rounded-xl p-12 border border-white/5 border-dashed flex flex-col items-center justify-center text-center">
-                        <div class="w-20 h-20 bg-[#0a0a0a] rounded-full flex items-center justify-center mb-6">
-                            <i data-lucide="upload-cloud" class="w-10 h-10 text-gray-600"></i>
-                        </div>
-                        <h3 class="text-xl font-semibold mb-2">No bots yet</h3>
-                        <p class="text-gray-500 mb-6 max-w-md">Upload your first Node.js or Python bot file to get started</p>
-                        <button onclick="showSection('upload')" class="bg-green-500 hover:bg-green-600 text-black font-semibold px-6 py-3 rounded-lg transition-all">
-                            Upload Your First Bot
-                        </button>
-                    </div>
-                `;
+                container.innerHTML = `<div class="col-span-full glass-dark rounded-xl p-12 border border-white/5 border-dashed flex flex-col items-center justify-center text-center"><div class="w-20 h-20 bg-[#0a0a0a] rounded-full flex items-center justify-center mb-6"><i data-lucide="upload-cloud" class="w-10 h-10 text-gray-600"></i></div><h3 class="text-xl font-semibold mb-2">No bots yet</h3><p class="text-gray-500 mb-6 max-w-md">Upload your bot file</p><button onclick="showSection('upload')" class="bg-green-500 hover:bg-green-600 text-black font-semibold px-6 py-3 rounded-lg transition-all">Upload Your First Bot</button></div>`;
                 lucide.createIcons();
                 return;
             }
-
             container.innerHTML = userBots.map(bot => `
                 <div class="glass-dark rounded-xl p-6 border border-white/5 hover:border-green-500/30 transition-all group">
                     <div class="flex items-start justify-between mb-4">
@@ -364,26 +225,11 @@
                                 <p class="text-xs text-gray-500">${bot.runtime.replace('nodejs', 'Node.js ').replace('python', 'Python ')} • ${bot.is_zip ? '📦 ZIP' : bot.filename}</p>
                             </div>
                         </div>
-                        <span class="px-3 py-1 rounded-full text-xs font-medium ${bot.status === 'running' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}">
-                            ${bot.status}
-                        </span>
+                        <span class="px-3 py-1 rounded-full text-xs font-medium ${bot.status === 'running' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}">${bot.status}</span>
                     </div>
-                    
                     <p class="text-sm text-gray-400 mb-4 line-clamp-2">${bot.description || 'No description'}</p>
-                    
-                    ${bot.pairing_method === 'telegram' ? `
-                    <div class="mb-3 p-2 bg-blue-500/10 rounded-lg">
-                        <p class="text-xs text-blue-400 flex items-center">
-                            <i data-lucide="message-circle" class="w-3 h-3 mr-1"></i>
-                            Telegram Pairing
-                        </p>
-                    </div>
-                    ` : ''}
-                    
                     <div class="flex space-x-2">
-                        <button onclick="viewLogs(${bot.id})" class="flex-1 py-2 border border-white/10 rounded-lg hover:bg-white/5 transition-colors text-sm">
-                            View Logs
-                        </button>
+                        <button onclick="viewLogs(${bot.id})" class="flex-1 py-2 border border-white/10 rounded-lg hover:bg-white/5 transition-colors text-sm">View Logs</button>
                         ${bot.status === 'running' ? 
                             `<button onclick="controlBotDirect(${bot.id}, 'stop')" class="flex-1 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors text-sm">Stop</button>` :
                             `<button onclick="controlBotDirect(${bot.id}, 'start')" class="flex-1 py-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors text-sm">Start</button>`
@@ -391,109 +237,51 @@
                     </div>
                 </div>
             `).join('');
-            
             lucide.createIcons();
         }
-
-        // File Upload Handling - UPDATED
+        
         const dropZone = document.getElementById('drop-zone');
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('dragover'); });
+        dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); });
         
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
+        function handleFileSelect(e) { if (e.target.files.length) handleFile(e.target.files[0]); }
         
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('dragover');
-        });
-        
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length) handleFile(files[0]);
-        });
-
-        function handleFileSelect(e) {
-            if (e.target.files.length) handleFile(e.target.files[0]);
-        }
-
         function handleFile(file) {
             selectedFile = file;
-            const isZip = file.name.endsWith('.zip');
-            
+            const isZip = file.name.toLowerCase().endsWith('.zip');
             document.getElementById('filename').textContent = `${file.name} (${(file.size/1024).toFixed(1)} KB)`;
-            document.getElementById('filetype').textContent = isZip ? '📦 ZIP Archive - Will be extracted automatically' : '📄 Single File';
+            document.getElementById('filetype').textContent = isZip ? '📦 ZIP - Will auto-extract!' : `📄 ${file.name.split('.').pop().toUpperCase()} file`;
             document.getElementById('file-info').classList.remove('hidden');
-            
-            if (isZip) {
-                showToast('ZIP file selected! All contents will be extracted.', 'success');
-            }
+            if (isZip) showToast('ZIP selected! All files will be extracted.', 'success');
         }
-
+        
         function clearFile() {
             selectedFile = null;
             document.getElementById('bot-file').value = '';
             document.getElementById('file-info').classList.add('hidden');
         }
-
+        
         async function handleUpload(e) {
             e.preventDefault();
-            
-            if (!selectedFile) {
-                showToast('Please select a file', 'error');
-                return;
-            }
-
+            if (!selectedFile) { showToast('Please select a file', 'error'); return; }
             const btn = document.getElementById('upload-btn');
             btn.disabled = true;
             btn.innerHTML = '<div class="animate-spin rounded-full h-5 w-5 border-b-2 border-black"></div><span>Uploading...</span>';
-
             const formData = new FormData();
             formData.append('botFile', selectedFile);
             formData.append('name', document.getElementById('bot-name').value);
             formData.append('runtime', document.getElementById('bot-runtime').value);
             formData.append('description', document.getElementById('bot-description').value);
-
             try {
-                const res = await fetch('/api/bots', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-                    body: formData
-                });
-
+                const res = await fetch('/api/bots', { method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }, body: formData });
                 const data = await res.json();
-                
                 if (!res.ok) throw new Error(data.error);
-
-                // Save Telegram token if provided
-                const telegramToken = document.getElementById('telegram-token').value;
-                if (telegramToken) {
-                    await fetch(`/api/bots/${data.id}/pair-telegram`, {
-                        method: 'POST',
-                        headers: { 
-                            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ telegramToken })
-                    });
-                }
-
-                showToast(data.is_zip ? 'ZIP uploaded and extracted!' : 'Bot uploaded successfully!');
-                
+                showToast(data.is_zip ? 'ZIP uploaded & extracted!' : 'Bot uploaded successfully!');
                 e.target.reset();
                 clearFile();
-                
                 await loadBots();
                 showSection('bots');
-                
-                // Show pairing instructions
-                if (telegramToken) {
-                    setTimeout(() => {
-                        alert('🤖 Bot created!\n\n1. Click "Start" on your bot\n2. Open your Telegram bot\n3. Send /pair to get QR code\n4. Scan QR with WhatsApp\n5. Your bot is ready!');
-                    }, 500);
-                }
-                
             } catch (err) {
                 showToast(err.message, 'error');
             } finally {
@@ -502,132 +290,66 @@
                 lucide.createIcons();
             }
         }
-
-        // Bot Control
+        
         async function controlBotDirect(botId, action) {
             try {
-                const res = await fetch(`/api/execute/${botId}/${action}`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                });
-                
+                const res = await fetch(`/api/execute/${botId}/${action}`, { method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
-                
                 showToast(data.message);
                 await loadBots();
-                
-                if (currentBotId === botId) {
-                    updateLogModalStatus(action === 'start' ? 'running' : 'stopped');
-                }
-            } catch (err) {
-                showToast(err.message, 'error');
-            }
+                if (currentBotId === botId) updateLogModalStatus(action === 'start' ? 'running' : 'stopped');
+            } catch (err) { showToast(err.message, 'error'); }
         }
-
-        function controlBot(action) {
-            if (!currentBotId) return;
-            controlBotDirect(currentBotId, action);
-        }
-
-        // Logs
+        
+        function controlBot(action) { if (!currentBotId) return; controlBotDirect(currentBotId, action); }
+        
         async function viewLogs(botId) {
             currentBotId = botId;
             const bot = userBots.find(b => b.id === botId);
-            
             document.getElementById('log-bot-name').textContent = bot.name;
             updateLogModalStatus(bot.status);
-            
             openModal('logs');
             await loadBotLogs(botId);
-            
             if (logInterval) clearInterval(logInterval);
             logInterval = setInterval(() => loadBotLogs(botId), 3000);
         }
-
+        
         function updateLogModalStatus(status) {
             document.getElementById('log-bot-status').textContent = `Status: ${status}`;
             document.getElementById('log-bot-status').className = `text-sm ${status === 'running' ? 'text-green-400' : 'text-gray-400'}`;
-            
-            if (status === 'running') {
-                document.getElementById('btn-stop').classList.remove('hidden');
-                document.getElementById('btn-start').classList.add('hidden');
-            } else {
-                document.getElementById('btn-stop').classList.add('hidden');
-                document.getElementById('btn-start').classList.remove('hidden');
-            }
+            if (status === 'running') { document.getElementById('btn-stop').classList.remove('hidden'); document.getElementById('btn-start').classList.add('hidden'); }
+            else { document.getElementById('btn-stop').classList.add('hidden'); document.getElementById('btn-start').classList.remove('hidden'); }
         }
-
+        
         async function loadBotLogs(botId) {
             try {
-                const res = await fetch(`/api/bots/${botId}/logs`, {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                });
+                const res = await fetch(`/api/bots/${botId}/logs`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
                 const logs = await res.json();
-                
                 const container = document.getElementById('modal-logs-content');
-                if (logs.length === 0) {
-                    container.innerHTML = '<div class="text-gray-500">No logs yet...</div>';
-                    return;
-                }
-                
-                container.innerHTML = logs.reverse().map(log => `
-                    <div class="mb-1">
-                        <span class="text-gray-600">[${new Date(log.created_at).toLocaleTimeString()}]</span>
-                        <span class="${log.type === 'error' ? 'text-red-400' : log.type === 'success' ? 'text-green-400' : 'text-blue-400'}">${log.message}</span>
-                    </div>
-                `).join('');
-                
+                if (logs.length === 0) { container.innerHTML = '<div class="text-gray-500">No logs yet...</div>'; return; }
+                container.innerHTML = logs.reverse().map(log => `<div class="mb-1"><span class="text-gray-600">[${new Date(log.created_at).toLocaleTimeString()}]</span><span class="${log.type === 'error' ? 'text-red-400' : log.type === 'success' ? 'text-green-400' : 'text-blue-400'}"> ${log.message}</span></div>`).join('');
                 container.scrollTop = container.scrollHeight;
-            } catch (err) {
-                console.error('Failed to load logs:', err);
-            }
+            } catch (err) { console.error('Failed to load logs:', err); }
         }
-
-        function refreshLogs() {
-            if (currentBotId) loadBotLogs(currentBotId);
-        }
-
-        // UI Functions
+        
+        function refreshLogs() { if (currentBotId) loadBotLogs(currentBotId); }
+        
         function showSection(section) {
             document.querySelectorAll('[id^="section-"]').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.sidebar-link').forEach(el => {
-                el.classList.remove('active', 'text-green-400');
-                el.classList.add('text-gray-300');
-            });
-            
+            document.querySelectorAll('.sidebar-link').forEach(el => { el.classList.remove('active', 'text-green-400'); el.classList.add('text-gray-300'); });
             document.getElementById('section-' + section).classList.remove('hidden');
             document.getElementById('nav-' + section).classList.add('active', 'text-green-400');
             document.getElementById('nav-' + section).classList.remove('text-gray-300');
-            
             const titles = { 'bots': 'My Bots', 'upload': 'Upload Bot', 'logs': 'System Logs', 'settings': 'Settings' };
             document.getElementById('page-title').textContent = titles[section];
-            
             if (window.innerWidth < 768) toggleSidebar();
-            
-            if (section !== 'logs' && logInterval) {
-                clearInterval(logInterval);
-                logInterval = null;
-            }
+            if (section !== 'logs' && logInterval) { clearInterval(logInterval); logInterval = null; }
         }
-
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.getElementById('sidebar-overlay').classList.toggle('hidden');
-        }
-
-        function openModal(modalId) {
-            document.getElementById('modal-' + modalId).classList.add('active');
-        }
-
-        function closeModal(modalId) {
-            document.getElementById('modal-' + modalId).classList.remove('active');
-            if (logInterval) {
-                clearInterval(logInterval);
-                logInterval = null;
-            }
-        }
-
+        
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebar-overlay').classList.toggle('hidden'); }
+        function openModal(modalId) { document.getElementById('modal-' + modalId).classList.add('active'); }
+        function closeModal(modalId) { document.getElementById('modal-' + modalId).classList.remove('active'); if (logInterval) { clearInterval(logInterval); logInterval = null; } }
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 z-50 font-semibold flex items-center space-x-2 ${type === 'error' ? 'bg-red-500 text-white' : 'bg-green-500 text-black'}`;
@@ -635,24 +357,9 @@
             toast.classList.remove('translate-y-20');
             setTimeout(() => toast.classList.add('translate-y-20'), 3000);
         }
-
-        async function saveSettings() {
-            showToast('Settings saved!');
-        }
-
-        function logout() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '/auth.html?mode=login';
-        }
-
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal')) {
-                closeModal(event.target.id.replace('modal-', ''));
-            }
-        }
-
-        // Initialize
+        function saveSettings() { showToast('Settings saved!'); }
+        function logout() { localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href = '/auth.html?mode=login'; }
+        window.onclick = function(event) { if (event.target.classList.contains('modal')) closeModal(event.target.id.replace('modal-', '')); }
         checkAuth();
     </script>
 </body>
