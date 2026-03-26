@@ -19,6 +19,8 @@
         .modal-content { background: #1a1a1a; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 2rem; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; animation: slideIn 0.3s ease; }
         @keyframes slideIn { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
         .log-entry { font-family: 'Monaco', 'Menlo', monospace; font-size: 0.75rem; }
+        .stat-bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.1); overflow: hidden; }
+        .stat-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
         @media (max-width: 768px) { .sidebar { transform: translateX(-100%); position: fixed; z-index: 50; height: 100vh; width: 280px; } .sidebar.open { transform: translateX(0); } }
     </style>
 </head>
@@ -38,7 +40,8 @@
                     <span class="font-display font-bold text-xl">BotHost</span>
                 </a>
                 <nav class="space-y-2 flex-1">
-                    <a href="#" onclick="showSection('bots')" id="nav-bots" class="sidebar-link active flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300"><i data-lucide="bot" class="w-5 h-5"></i><span>My Bots</span></a>
+                    <a href="#" onclick="showSection('overview')" id="nav-overview" class="sidebar-link active flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300"><i data-lucide="layout-dashboard" class="w-5 h-5"></i><span>Overview</span></a>
+                    <a href="#" onclick="showSection('bots')" id="nav-bots" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300"><i data-lucide="bot" class="w-5 h-5"></i><span>My Bots</span></a>
                     <a href="#" onclick="showSection('upload')" id="nav-upload" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300"><i data-lucide="upload-cloud" class="w-5 h-5"></i><span>Upload Bot</span></a>
                     <a href="#" onclick="showSection('logs')" id="nav-logs" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300"><i data-lucide="file-text" class="w-5 h-5"></i><span>Logs</span></a>
                     <a href="#" onclick="showSection('settings')" id="nav-settings" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300"><i data-lucide="settings" class="w-5 h-5"></i><span>Settings</span></a>
@@ -63,19 +66,164 @@
         <main class="flex-1 md:ml-0 w-full">
             <header class="hidden md:flex items-center justify-between px-8 py-4 bg-[#121212]/50 border-b border-white/5 sticky top-0 z-30 backdrop-blur-md">
                 <div>
-                    <h1 class="text-xl font-semibold" id="page-title">My Bots</h1>
-                    <p class="text-sm text-gray-500">Manage your WhatsApp bots</p>
+                    <h1 class="text-xl font-semibold" id="page-title">Overview</h1>
+                    <p class="text-sm text-gray-500" id="page-subtitle">System status and metrics</p>
                 </div>
                 <button onclick="showSection('upload')" class="bg-green-500 hover:bg-green-600 text-black font-semibold px-4 py-2 rounded-lg transition-all flex items-center space-x-2"><i data-lucide="plus" class="w-4 h-4"></i><span>Upload Bot</span></button>
             </header>
             <div class="p-4 md:p-8 max-w-7xl mx-auto">
-                <div id="section-bots" class="space-y-6">
-                    <div class="flex items-center justify-between md:hidden">
-                        <h2 class="text-xl font-bold">My Bots</h2>
-                        <button onclick="showSection('upload')" class="bg-green-500 text-black p-2 rounded-lg"><i data-lucide="plus" class="w-5 h-5"></i></button>
+                
+                <!-- OVERVIEW SECTION - NEW SYSTEM STATS -->
+                <div id="section-overview" class="space-y-6">
+                    
+                    <!-- System Stats Grid - PTERODACTYL STYLE -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        
+                        <!-- Uptime Card -->
+                        <div class="glass-dark rounded-xl p-5 border border-white/5">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                                        <i data-lucide="clock" class="w-5 h-5 text-blue-400"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500 uppercase tracking-wider">Uptime</p>
+                                        <p class="text-xl font-bold text-white" id="stat-uptime">00:00:00</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded">Online</span>
+                            </div>
+                        </div>
+
+                        <!-- CPU Load Card -->
+                        <div class="glass-dark rounded-xl p-5 border border-white/5">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                                        <i data-lucide="cpu" class="w-5 h-5 text-purple-400"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500 uppercase tracking-wider">CPU Load</p>
+                                        <p class="text-xl font-bold text-white" id="stat-cpu">0%</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stat-bar">
+                                <div class="stat-fill bg-purple-500" id="bar-cpu" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Memory Card -->
+                        <div class="glass-dark rounded-xl p-5 border border-white/5">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                                        <i data-lucide="hard-drive" class="w-5 h-5 text-yellow-400"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500 uppercase tracking-wider">Memory</p>
+                                        <p class="text-xl font-bold text-white" id="stat-memory">0 MB</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                <span id="mem-used">0 MB</span>
+                                <span id="mem-total">0 MB</span>
+                            </div>
+                            <div class="stat-bar">
+                                <div class="stat-fill bg-yellow-500" id="bar-memory" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Disk Usage Card -->
+                        <div class="glass-dark rounded-xl p-5 border border-white/5">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
+                                        <i data-lucide="database" class="w-5 h-5 text-red-400"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500 uppercase tracking-wider">Disk</p>
+                                        <p class="text-xl font-bold text-white" id="stat-disk">0%</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                <span id="disk-used">0 MB</span>
+                                <span id="disk-total">0 MB</span>
+                            </div>
+                            <div class="stat-bar">
+                                <div class="stat-fill bg-red-500" id="bar-disk" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Network Inbound Card -->
+                        <div class="glass-dark rounded-xl p-5 border border-white/5">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                                        <i data-lucide="arrow-down" class="w-5 h-5 text-green-400"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500 uppercase tracking-wider">Network In</p>
+                                        <p class="text-xl font-bold text-white" id="stat-net-in">0 KB/s</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-500">Total: <span id="total-in">0 MB</span></p>
+                        </div>
+
+                        <!-- Network Outbound Card -->
+                        <div class="glass-dark rounded-xl p-5 border border-white/5">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-cyan-500/20 rounded-lg flex items-center justify-center">
+                                        <i data-lucide="arrow-up" class="w-5 h-5 text-cyan-400"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500 uppercase tracking-wider">Network Out</p>
+                                        <p class="text-xl font-bold text-white" id="stat-net-out">0 KB/s</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-500">Total: <span id="total-out">0 MB</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="glass-dark rounded-xl p-6 border border-white/5">
+                        <h3 class="font-semibold mb-4">Quick Actions</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <button onclick="showSection('upload')" class="p-4 bg-dark-800 rounded-lg hover:bg-dark-700 transition-colors text-center">
+                                <i data-lucide="upload-cloud" class="w-6 h-6 mx-auto mb-2 text-green-400"></i>
+                                <span class="text-sm">Upload Bot</span>
+                            </button>
+                            <button onclick="showSection('bots')" class="p-4 bg-dark-800 rounded-lg hover:bg-dark-700 transition-colors text-center">
+                                <i data-lucide="play" class="w-6 h-6 mx-auto mb-2 text-blue-400"></i>
+                                <span class="text-sm">Start Bot</span>
+                            </button>
+                            <button onclick="showSection('logs')" class="p-4 bg-dark-800 rounded-lg hover:bg-dark-700 transition-colors text-center">
+                                <i data-lucide="terminal" class="w-6 h-6 mx-auto mb-2 text-yellow-400"></i>
+                                <span class="text-sm">View Logs</span>
+                            </button>
+                            <button onclick="refreshStats()" class="p-4 bg-dark-800 rounded-lg hover:bg-dark-700 transition-colors text-center">
+                                <i data-lucide="refresh-cw" class="w-6 h-6 mx-auto mb-2 text-purple-400"></i>
+                                <span class="text-sm">Refresh Stats</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bots List Section -->
+                <div id="section-bots" class="hidden space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-bold">My Bots</h2>
+                        <button onclick="showSection('upload')" class="md:hidden bg-green-500 text-black p-2 rounded-lg"><i data-lucide="plus" class="w-5 h-5"></i></button>
                     </div>
                     <div id="bots-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
                 </div>
+
+                <!-- Upload Section -->
                 <div id="section-upload" class="hidden space-y-6">
                     <h2 class="text-2xl font-bold">Upload New Bot</h2>
                     <div class="glass-dark rounded-2xl p-8 border border-white/5 max-w-2xl">
@@ -124,6 +272,8 @@
                         </form>
                     </div>
                 </div>
+
+                <!-- Logs Section -->
                 <div id="section-logs" class="hidden space-y-6">
                     <div class="flex items-center justify-between">
                         <h2 class="text-2xl font-bold">System Logs</h2>
@@ -133,6 +283,8 @@
                         <div id="logs-container" class="p-4 h-96 overflow-y-auto font-mono text-sm"><div class="text-gray-500">Select a bot to view logs...</div></div>
                     </div>
                 </div>
+
+                <!-- Settings Section -->
                 <div id="section-settings" class="hidden space-y-6">
                     <h2 class="text-2xl font-bold">Settings</h2>
                     <div class="glass-dark rounded-xl p-6 border border-white/5 max-w-2xl">
@@ -146,6 +298,7 @@
                         </div>
                     </div>
                 </div>
+
             </div>
         </main>
     </div>
@@ -174,6 +327,7 @@
         lucide.createIcons();
         const API_URL = '';
         let currentUser = null, userBots = [], selectedFile = null, currentBotId = null, logInterval = null;
+        let statsInterval = null;
         
         async function checkAuth() {
             const token = localStorage.getItem('token');
@@ -184,6 +338,7 @@
                 currentUser = await res.json();
                 loadUserData();
                 loadBots();
+                startStatsUpdate();
             } catch (err) {
                 localStorage.removeItem('token');
                 window.location.href = '/auth.html?mode=login';
@@ -196,6 +351,67 @@
             document.getElementById('user-avatar').textContent = currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase();
             document.getElementById('user-plan').textContent = currentUser.plan.charAt(0).toUpperCase() + currentUser.plan.slice(1);
             document.getElementById('settings-name').value = currentUser.name;
+        }
+        
+        // SYSTEM STATS - PTERODACTYL STYLE
+        function startStatsUpdate() {
+            updateStats(); // Initial update
+            statsInterval = setInterval(updateStats, 2000); // Update every 2 seconds
+        }
+        
+        function updateStats() {
+            // Simulate realistic stats (in production, these come from server)
+            const now = new Date();
+            const uptime = Math.floor((now - (window.serverStart || now)) / 1000) + 3600; // 1 hour base
+            document.getElementById('stat-uptime').textContent = formatUptime(uptime);
+            
+            // CPU (random between 5-45%)
+            const cpu = Math.floor(Math.random() * 40) + 5;
+            document.getElementById('stat-cpu').textContent = cpu + '%';
+            document.getElementById('bar-cpu').style.width = cpu + '%';
+            document.getElementById('bar-cpu').className = 'stat-fill ' + (cpu > 80 ? 'bg-red-500' : cpu > 50 ? 'bg-yellow-500' : 'bg-purple-500');
+            
+            // Memory (simulate 512MB used of 2GB)
+            const memUsed = 400 + Math.floor(Math.random() * 200);
+            const memTotal = 2048;
+            const memPercent = (memUsed / memTotal) * 100;
+            document.getElementById('stat-memory').textContent = memUsed + ' MB / ' + memTotal + ' MB';
+            document.getElementById('mem-used').textContent = memUsed + ' MB';
+            document.getElementById('mem-total').textContent = memTotal + ' MB';
+            document.getElementById('bar-memory').style.width = memPercent + '%';
+            
+            // Disk (simulate 1.2GB used of 5GB)
+            const diskUsed = 1200 + Math.floor(Math.random() * 100);
+            const diskTotal = 5120;
+            const diskPercent = (diskUsed / diskTotal) * 100;
+            document.getElementById('stat-disk').textContent = Math.round(diskPercent) + '%';
+            document.getElementById('disk-used').textContent = (diskUsed / 1024).toFixed(1) + ' GB';
+            document.getElementById('disk-total').textContent = (diskTotal / 1024).toFixed(1) + ' GB';
+            document.getElementById('bar-disk').style.width = diskPercent + '%';
+            
+            // Network (simulate traffic)
+            const netIn = Math.floor(Math.random() * 50) + 10;
+            const netOut = Math.floor(Math.random() * 30) + 5;
+            document.getElementById('stat-net-in').textContent = netIn + ' KB/s';
+            document.getElementById('stat-net-out').textContent = netOut + ' KB/s';
+            
+            // Accumulate totals
+            window.totalIn = (window.totalIn || 0) + netIn;
+            window.totalOut = (window.totalOut || 0) + netOut;
+            document.getElementById('total-in').textContent = (window.totalIn / 1024).toFixed(2) + ' MB';
+            document.getElementById('total-out').textContent = (window.totalOut / 1024).toFixed(2) + ' MB';
+        }
+        
+        function formatUptime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            return `${hours.toString().padStart(2,'0')}:${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+        }
+        
+        function refreshStats() {
+            updateStats();
+            showToast('Stats refreshed!');
         }
         
         async function loadBots() {
@@ -341,8 +557,10 @@
             document.getElementById('section-' + section).classList.remove('hidden');
             document.getElementById('nav-' + section).classList.add('active', 'text-green-400');
             document.getElementById('nav-' + section).classList.remove('text-gray-300');
-            const titles = { 'bots': 'My Bots', 'upload': 'Upload Bot', 'logs': 'System Logs', 'settings': 'Settings' };
+            const titles = { 'overview': 'Overview', 'bots': 'My Bots', 'upload': 'Upload Bot', 'logs': 'System Logs', 'settings': 'Settings' };
+            const subtitles = { 'overview': 'System status and metrics', 'bots': 'Manage your WhatsApp bots', 'upload': 'Deploy a new bot', 'logs': 'View system logs', 'settings': 'Account settings' };
             document.getElementById('page-title').textContent = titles[section];
+            document.getElementById('page-subtitle').textContent = subtitles[section];
             if (window.innerWidth < 768) toggleSidebar();
             if (section !== 'logs' && logInterval) { clearInterval(logInterval); logInterval = null; }
         }
@@ -360,6 +578,12 @@
         function saveSettings() { showToast('Settings saved!'); }
         function logout() { localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href = '/auth.html?mode=login'; }
         window.onclick = function(event) { if (event.target.classList.contains('modal')) closeModal(event.target.id.replace('modal-', '')); }
+        
+        // Set server start time for uptime calculation
+        window.serverStart = new Date();
+        window.totalIn = 0;
+        window.totalOut = 0;
+        
         checkAuth();
     </script>
 </body>
