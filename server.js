@@ -26,7 +26,7 @@ const db = new sqlite3.Database(dbPath);
 
 db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, password TEXT NOT NULL, plan TEXT DEFAULT 'starter', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
-  db.run(`CREATE TABLE IF NOT EXISTS bots (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, name TEXT NOT NULL, runtime TEXT NOT NULL, filename TEXT NOT NULL, is_zip BOOLEAN DEFAULT 0, extracted_path TEXT, description TEXT, status TEXT DEFAULT 'stopped', port INTEGER, pid INTEGER, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+  db.run(`CREATE TABLE IF NOT EXISTS bots (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, name TEXT NOT NULL, runtime TEXT NOT NULL, filename TEXT NOT NULL, is_zip BOOLEAN DEFAULT 0, extracted_path TEXT, main_file TEXT, description TEXT, status TEXT DEFAULT 'stopped', port INTEGER, pid INTEGER, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
   db.run(`CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, bot_id INTEGER NOT NULL, message TEXT NOT NULL, type TEXT DEFAULT 'info', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
 });
 
@@ -52,7 +52,8 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage, limits: { fileSize: 100 * 1024 * 1024 } });
+// ACCEPT ALL FILES - NO RESTRICTIONS
+const upload = multer({ storage, limits: { fileSize: 500 * 1024 * 1024 } }); // 500MB limit
 
 const runningBots = new Map();
 
@@ -94,11 +95,29 @@ app.get('/api/bots', authenticateToken, (req, res) => {
   });
 });
 
+// FIND MAIN FILE IN DIRECTORY
+function findMainFile(dir) {
+  const files = fs.readdirSync(dir);
+  // Priority order for main files
+  const priorities = ['index.js', 'bot.js', 'main.js', 'app.js', 'server.js', 'index.py', 'main.py', 'bot.py', 'app.py'];
+  for (const priority of priorities) {
+    if (files.includes(priority)) return priority;
+  }
+  // Find any .js or .py file
+  const codeFile = files.find(f => f.endsWith('.js') || f.endsWith('.py'));
+  if (codeFile) return codeFile;
+  // Return first file if no code file found
+  return files[0];
+}
+
 app.post('/api/bots', authenticateToken, upload.single('botFile'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+  
   const { name, runtime, description } = req.body;
   const isZip = req.file.originalname.toLowerCase().endsWith('.zip');
   let extractedPath = null;
+  let mainFile = req.file.filename;
+  
   if (isZip) {
     try {
       const zip = new AdmZip(req.file.path);
@@ -106,14 +125,28 @@ app.post('/api/bots', authenticateToken, upload.single('botFile'), async (req, r
       fs.ensureDirSync(extractDir);
       zip.extractAllTo(extractDir, true);
       extractedPath = extractDir;
+      mainFile = findMainFile(extractDir);
     } catch (err) {
       return res.status(400).json({ error: 'Failed to extract ZIP: ' + err.message });
     }
   }
-  db.run('INSERT INTO bots (user_id, name, runtime, filename, is_zip, extracted_path, description, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [req.user.userId, name, runtime, req.file.filename, isZip ? 1 : 0, extractedPath, description, 'stopped'], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ id: this.lastID, name, runtime, filename: req.file.filename, is_zip: isZip ? 1 : 0, description, status: 'stopped' });
-  });
+  
+  db.run('INSERT INTO bots (user_id, name, runtime, filename, is_zip, extracted_path, main_file, description, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [req.user.userId, name, runtime, req.file.filename, isZip ? 1 : 0, extractedPath, mainFile, description, 'stopped'],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ 
+        id: this.lastID, 
+        name, 
+        runtime, 
+        filename: req.file.filename, 
+        is_zip: isZip ? 1 : 0,
+        main_file: mainFile,
+        description, 
+        status: 'stopped'
+      });
+    }
+  );
 });
 
 app.get('/api/bots/:id/logs', authenticateToken, (req, res) => {
@@ -126,44 +159,67 @@ app.get('/api/bots/:id/logs', authenticateToken, (req, res) => {
 app.post('/api/execute/:id/start', authenticateToken, (req, res) => {
   const botId = req.params.id;
   if (runningBots.has(botId)) return res.status(400).json({ error: 'Already running' });
+  
   db.get('SELECT * FROM bots WHERE id = ? AND user_id = ?', [botId, req.user.userId], (err, bot) => {
     if (err || !bot) return res.status(404).json({ error: 'Bot not found' });
+    
     const userDir = path.join(__dirname, 'uploads', req.user.userId.toString());
     let botFile, workingDir;
+    
     if (bot.is_zip && bot.extracted_path) {
       workingDir = bot.extracted_path;
-      const files = fs.readdirSync(workingDir);
-      botFile = files.find(f => f.endsWith('.js') || f.endsWith('.py'));
-      if (!botFile) return res.status(400).json({ error: 'No .js or .py file found in ZIP' });
-      botFile = path.join(workingDir, botFile);
+      botFile = path.join(workingDir, bot.main_file || 'index.js');
+      // Verify file exists
+      if (!fs.existsSync(botFile)) {
+        // Try to find any file
+        const files = fs.readdirSync(workingDir);
+        const anyFile = files.find(f => !f.startsWith('.'));
+        if (!anyFile) return res.status(400).json({ error: 'No files found in ZIP' });
+        botFile = path.join(workingDir, anyFile);
+      }
     } else {
       workingDir = userDir;
       botFile = path.join(userDir, bot.filename);
     }
+    
     const port = 3000 + Math.floor(Math.random() * 1000);
     let childProcess;
     const env = { ...process.env, PORT: port, BOT_ID: botId };
-    if (bot.runtime.includes('node')) {
+    
+    // Determine runtime from file extension if not set
+    let runtime = bot.runtime;
+    if (!runtime || runtime === 'auto') {
+      if (botFile.endsWith('.py')) runtime = 'python3';
+      else if (botFile.endsWith('.js')) runtime = 'nodejs';
+    }
+    
+    if (runtime.includes('node')) {
       childProcess = spawn('node', [botFile], { cwd: workingDir, env });
-    } else if (bot.runtime.includes('python')) {
+    } else if (runtime.includes('python')) {
       childProcess = spawn('python3', [botFile], { cwd: workingDir, env });
     } else {
-      return res.status(400).json({ error: 'Unknown runtime' });
+      // Try to execute any file
+      childProcess = spawn('sh', [botFile], { cwd: workingDir, env });
     }
+    
     runningBots.set(botId, { process: childProcess, port, startTime: new Date() });
     db.run('UPDATE bots SET status = ?, port = ?, pid = ? WHERE id = ?', ['running', port, childProcess.pid, botId]);
+    
     childProcess.stdout.on('data', (data) => {
       db.run('INSERT INTO logs (bot_id, message, type) VALUES (?, ?, ?)', [botId, data.toString().trim(), 'info']);
     });
+    
     childProcess.stderr.on('data', (data) => {
       db.run('INSERT INTO logs (bot_id, message, type) VALUES (?, ?, ?)', [botId, data.toString().trim(), 'error']);
     });
+    
     childProcess.on('close', (code) => {
       runningBots.delete(botId);
       db.run('UPDATE bots SET status = ?, pid = NULL WHERE id = ?', ['stopped', botId]);
       db.run('INSERT INTO logs (bot_id, message, type) VALUES (?, ?, ?)', [botId, `Stopped with code ${code}`, 'info']);
     });
-    res.json({ message: 'Bot started', port, pid: childProcess.pid });
+    
+    res.json({ message: `Bot started: ${path.basename(botFile)}`, port, pid: childProcess.pid });
   });
 });
 
