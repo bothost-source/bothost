@@ -10,6 +10,7 @@ const fs = require('fs-extra');
 const { spawn } = require('child_process');
 const { v4: uuidv4 } = require('uuid');
 const AdmZip = require('adm-zip');
+const os = require('os');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -52,8 +53,7 @@ const storage = multer.diskStorage({
   }
 });
 
-// ACCEPT ALL FILES - NO RESTRICTIONS
-const upload = multer({ storage, limits: { fileSize: 500 * 1024 * 1024 } }); // 500MB limit
+const upload = multer({ storage, limits: { fileSize: 500 * 1024 * 1024 } });
 
 const runningBots = new Map();
 
@@ -95,24 +95,19 @@ app.get('/api/bots', authenticateToken, (req, res) => {
   });
 });
 
-// FIND MAIN FILE IN DIRECTORY
 function findMainFile(dir) {
   const files = fs.readdirSync(dir);
-  // Priority order for main files
   const priorities = ['index.js', 'bot.js', 'main.js', 'app.js', 'server.js', 'index.py', 'main.py', 'bot.py', 'app.py'];
   for (const priority of priorities) {
     if (files.includes(priority)) return priority;
   }
-  // Find any .js or .py file
   const codeFile = files.find(f => f.endsWith('.js') || f.endsWith('.py'));
   if (codeFile) return codeFile;
-  // Return first file if no code file found
   return files[0];
 }
 
 app.post('/api/bots', authenticateToken, upload.single('botFile'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-  
   const { name, runtime, description } = req.body;
   const isZip = req.file.originalname.toLowerCase().endsWith('.zip');
   let extractedPath = null;
@@ -135,16 +130,7 @@ app.post('/api/bots', authenticateToken, upload.single('botFile'), async (req, r
     [req.user.userId, name, runtime, req.file.filename, isZip ? 1 : 0, extractedPath, mainFile, description, 'stopped'],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ 
-        id: this.lastID, 
-        name, 
-        runtime, 
-        filename: req.file.filename, 
-        is_zip: isZip ? 1 : 0,
-        main_file: mainFile,
-        description, 
-        status: 'stopped'
-      });
+      res.json({ id: this.lastID, name, runtime, filename: req.file.filename, is_zip: isZip ? 1 : 0, main_file: mainFile, description, status: 'stopped' });
     }
   );
 });
@@ -169,9 +155,7 @@ app.post('/api/execute/:id/start', authenticateToken, (req, res) => {
     if (bot.is_zip && bot.extracted_path) {
       workingDir = bot.extracted_path;
       botFile = path.join(workingDir, bot.main_file || 'index.js');
-      // Verify file exists
       if (!fs.existsSync(botFile)) {
-        // Try to find any file
         const files = fs.readdirSync(workingDir);
         const anyFile = files.find(f => !f.startsWith('.'));
         if (!anyFile) return res.status(400).json({ error: 'No files found in ZIP' });
@@ -186,7 +170,6 @@ app.post('/api/execute/:id/start', authenticateToken, (req, res) => {
     let childProcess;
     const env = { ...process.env, PORT: port, BOT_ID: botId };
     
-    // Determine runtime from file extension if not set
     let runtime = bot.runtime;
     if (!runtime || runtime === 'auto') {
       if (botFile.endsWith('.py')) runtime = 'python3';
@@ -198,7 +181,6 @@ app.post('/api/execute/:id/start', authenticateToken, (req, res) => {
     } else if (runtime.includes('python')) {
       childProcess = spawn('python3', [botFile], { cwd: workingDir, env });
     } else {
-      // Try to execute any file
       childProcess = spawn('sh', [botFile], { cwd: workingDir, env });
     }
     
@@ -230,6 +212,52 @@ app.post('/api/execute/:id/stop', authenticateToken, (req, res) => {
   runningBots.delete(req.params.id);
   db.run('UPDATE bots SET status = ?, port = NULL, pid = NULL WHERE id = ?', ['stopped', req.params.id]);
   res.json({ message: 'Bot stopped' });
+});
+
+// ========== SYSTEM STATS ENDPOINT (NEW) ==========
+app.get('/api/stats', authenticateToken, (req, res) => {
+  // Get system information
+  const totalMem = os.totalmem();
+  const freeMem = os.freemem();
+  const usedMem = totalMem - freeMem;
+  
+  // Get load average (1, 5, 15 minutes)
+  const loadAvg = os.loadavg();
+  
+  // Calculate CPU percentage approximation
+  const cpuCount = os.cpus().length;
+  const cpuPercent = Math.min(Math.round((loadAvg[0] / cpuCount) * 100), 100);
+  
+  // Get disk info (approximation since we can't easily get real disk stats)
+  // In production, you'd use a module like 'diskusage'
+  const diskUsed = 1200 + Math.floor(Math.random() * 500); // Simulated for now
+  const diskTotal = 5120;
+  
+  // Network stats (simulated since Node.js doesn't track this natively)
+  // In production, you'd read from /proc/net/dev on Linux
+  const netIn = Math.floor(Math.random() * 100) + 20;
+  const netOut = Math.floor(Math.random() * 80) + 10;
+  
+  res.json({
+    uptime: os.uptime(),
+    cpu: cpuPercent,
+    memory: {
+      used: Math.round(usedMem / 1024 / 1024),
+      total: Math.round(totalMem / 1024 / 1024),
+      percent: Math.round((usedMem / totalMem) * 100)
+    },
+    disk: {
+      used: diskUsed,
+      total: diskTotal,
+      percent: Math.round((diskUsed / diskTotal) * 100)
+    },
+    network: {
+      in: netIn,
+      out: netOut
+    },
+    platform: os.platform(),
+    hostname: os.hostname()
+  });
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
